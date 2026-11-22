@@ -1,0 +1,113 @@
+# ============================================================
+# SmileCare Dental Clinic — sample brand config (fictional)
+# Naya client onboard karna = is file ki copy banao, values
+# badlo, brands/ folder me daalo, server restart — bas.
+# (Server ab MULTI-BRAND hai: saari YAMLs ek saath chalti hain,
+# BRAND_CONFIG sirf default brand chunta hai.)
+# Ya aur easy: browser me /admin page khol ke wahi se badlo.
+#
+# Tip: messages me {brand} likhne se business ka naam apne
+# aap aa jata hai — naam badlo to greeting khud badal jayegi.
+#
+# Note: /admin page se SAVE karne par ye file dobara likhi
+# jati hai aur ye comments hat jate hain — values bilkul safe
+# rehte hain, bas file plain ho jati hai.
+# ============================================================
+
+brand:
+  name: "SmileCare Dental Clinic"
+  tagline: "Aapki smile, hamari zimmedari"
+  city: "New Delhi"
+  language_style: "hinglish"
+
+contact:
+  phone: "+91 98110 24680"
+  address: "Shop 12, Main Market, Sector 6, Dwarka, New Delhi"
+  hours: "Mon–Sat: 10:00 AM – 8:00 PM · Sunday: 11:00 AM – 2:00 PM"
+
+# Is number par nayi booking aur "owner se baat" wale alerts jayenge
+owner_alert_number: "919812345678"
+
+# Multi-brand routing: jab is brand ka asli WhatsApp number Meta par
+# judega, to wahan ki Phone Number ID yahan daalein. Ek hi server par
+# har brand ke messages isi ID se pehchane jayenge. Tab tak placeholder.
+whatsapp_phone_number_id: "PLACEHOLDER_PHONE_NUMBER_ID"
+
+# Booking reminder: appointment se kitne ghante pehle reminder jaye
+reminders:
+  hours_before: 1
+
+# Lead follow-up: enquiry ke itne ghante baad bhi booking na hui ho,
+# to EK polite follow-up message jayega (booking ho gayi to cancel).
+# Message me {brand} aur {name} placeholders chalte hain.
+follow_up:
+  after_hours: 4
+  message: "Namaste {name} ji! 🙏 *{brand}* se bas yaad dila rahe the — aapne appointment ke baare me poocha tha. Kya hum aapki booking kar dein? Bas 'menu' likh kar Book Appointment chunein, 1 minute lagega. 😊"
+
+messages:
+  welcome: |
+    Namaste! 🙏 *{brand}* me aapka swagat hai.
+    Main aapka digital assistant hu — appointment, prices aur services ki jaankari ke liye yahi pooch sakte hain.
+    Neeche se ek option chunein:
+  fallback: "Maaf kijiye, main samajh nahi paya. 🙏 Kripya menu se ek number chunein, ya apna sawal simple shabdon me likhein — jaise 'timing kya hai' ya 'cleaning ka price'."
+  human_handoff: "Theek hai! Maine owner ko alert bhej diya hai. 📲 Wo jald hi isi chat par aapse baat karenge. Tab tak bot pause rahega — dhanyavaad aapke sabr ke liye. 🙏"
+  booking_done: "Badhaai ho! 🎉 Aapki booking confirm ho gayi hai. Hum appointment se pehle ek reminder bhi bhejenge."
+
+menu:
+  - label: "Services & Treatments"
+    action: services
+  - label: "Prices"
+    action: prices
+  - label: "Book Appointment"
+    action: book
+  - label: "Common Sawal (FAQs)"
+    action: faq
+  - label: "Owner se Baat Karein"
+    action: human
+
+services:
+  - name: "Dental Cleaning & Polishing"
+    price_label: "₹999"
+    description: "Ultrasonic cleaning + polish, lagbhag 30 minute. Har 6 mahine me recommended."
+  - name: "Tooth Filling"
+    price_label: "₹1,499 se"
+    description: "Cavity ke liye natural rang wali (composite) filling."
+  - name: "Root Canal Treatment (RCT)"
+    price_label: "₹4,999 se"
+    description: "Dard wale daant ko bachane ka ilaaj — zyadatar ek hi sitting me pura."
+  - name: "Teeth Whitening"
+    price_label: "₹7,999"
+    description: "Ek sitting me chamakti smile — shaadi ya special occasion se pehle perfect."
+  - name: "Dental Implants"
+    price_label: "₹24,999 se"
+    description: "Gire hue daant ka permanent solution. Pehle free consultation aur X-ray review."
+
+faqs:
+  - question: "Clinic ki timing kya hai?"
+    keywords: ["timing", "time", "hours", "khula", "kab khulta", "sunday"]
+    answer: "🕙 Hamari timing hai:\nMon–Sat: 10:00 AM – 8:00 PM\nSunday: 11:00 AM – 2:00 PM\nBina appointment ke bhi aa sakte hain, lekin booking karne se wait nahi karna padega."
+  - question: "Clinic kahan hai?"
+    keywords: ["address", "location", "kahan", "pata", "direction"]
+    answer: "📍 Humara address hai: Shop 12, Main Market, Sector 6, Dwarka, New Delhi.\nSabse paas metro station: Dwarka Sector 6. Parking market ke peeche available hai."
+  - question: "Payment kaise kar sakte hain?"
+    keywords: ["payment", "pay", "upi", "card", "cash", "paisa"]
+    answer: "💳 Hum UPI, credit/debit card aur cash — teeno accept karte hain. Bade treatments (jaise implants) ke liye aasan kiston (EMI) ki suvidha bhi hai."
+  - question: "Daant me bahut dard hai, kya karun?"
+    keywords: ["dard", "pain", "emergency", "dukh"]
+    answer: "🦷 Dard zyada hai to garam paani se kulla karein aur bina doctor ki salah ke heavy painkiller na lein. Aap chahein to menu se *Book Appointment* chunein — hum aapko sabse pehli available slot denge. Emergency me call karein: +91 98110 24680"
+  - question: "Pehli visit me kya hoga?"
+    keywords: ["pehli", "first visit", "checkup", "consultation"]
+    answer: "😊 Pehli visit me doctor pura check-up karenge, zaroorat ho to X-ray hoga, aur phir ilaaj ka plan aur sahi kharcha pehle hi bata diya jayega. Koi bhi treatment aapki marzi ke bina shuru nahi hota."
+
+booking:
+  enabled: true
+  intro: "Bilkul! 📅 Appointment book kar dete hain — bas 3 chhoti details chahiye hongi."
+
+# ------------------------------------------------------------
+# Google Sheet chat log (optional):
+# Har chat is Sheet me record karne ke liye Apps Script Web App
+# ka URL yahan daalein — ya .env me GOOGLE_SHEET_WEBHOOK_URL
+# set karein (env ko zyada priority milti hai). Setup: README.
+# google_sheet:
+#   webhook_url: "https://script.google.com/macros/s/XXXX/exec"
+# ------------------------------------------------------------

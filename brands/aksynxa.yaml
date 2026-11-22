@@ -1,0 +1,97 @@
+# ============================================================
+# AKSynxa — khud ki agency ka brand config
+# AI Automation Agency, New Delhi
+# (Server multi-brand hai — ye file demo-dental ke saath ek
+# hi server par chalti hai; messages phone_number_id se route
+# hote hain, /simulate aur /demo me brand chun sakte hain.)
+# ============================================================
+
+brand:
+  name: "AKSynxa"
+  tagline: "Business, on Autopilot"
+  city: "New Delhi"
+  language_style: "hinglish"
+
+contact:
+  phone: "+91 85952 40043"
+  address: "Uttam Nagar, New Delhi"
+  hours: "Mon–Sat: 10:00 AM – 7:00 PM"
+
+# Alerts isi number par jayenge (AKSynxa owner)
+owner_alert_number: "918595240043"
+
+# Multi-brand routing ke liye Meta Phone Number ID (abhi placeholder —
+# asli number judne par yahan uski ID aayegi)
+whatsapp_phone_number_id: "PLACEHOLDER_PHONE_NUMBER_ID"
+
+# Demo call reminder: booking se kitne ghante pehle
+reminders:
+  hours_before: 2
+
+# Lead follow-up: enquiry ke 2 ghante baad, booking/demo na hua ho to
+follow_up:
+  after_hours: 2
+  message: "Namaste! 🙏 *{brand}* se follow-up — aapne WhatsApp automation ke baare me jaankari li thi. Kya hum aapke business ke liye ek FREE 7-day pilot setup karke dein? Bas 'menu' likh kar Free Demo Call book kar lein, ya yahi reply kar dein. 😊"
+
+messages:
+  welcome: |
+    Namaste! 🙏 *{brand}* me aapka swagat hai — hum local businesses ke liye WhatsApp automation banate hain.
+    Enquiry ka instant auto-reply, lead follow-up, reminders — sab automatic.
+    Neeche se ek option chunein:
+  fallback: "Maaf kijiye, main samajh nahi paya. 🙏 Menu se ek number chunein, ya seedha apna sawal likhein — jaise 'price kya hai' ya 'free pilot kaise milega'."
+  human_handoff: "Theek hai! Maine team ko alert bhej diya hai. 📲 Ravi jald hi isi chat par aapse baat karenge. Dhanyavaad! 🙏"
+  booking_done: "Ho gaya! 🎉 Aapki free demo call book ho gayi hai. Hum time se pehle ek reminder bhejenge."
+
+menu:
+  - label: "Hamari Services"
+    action: services
+  - label: "Plans & Prices"
+    action: prices
+  - label: "Free Demo Call Book Karein"
+    action: book
+  - label: "Common Sawal (FAQs)"
+    action: faq
+  - label: "Team se Baat Karein"
+    action: human
+
+services:
+  - name: "WhatsApp Business Automation"
+    price_label: "₹9,999 setup (one-time)"
+    description: "Aapke WhatsApp number par smart auto-replies, menu, catalogue aur instant jawab — customer ko turant reply, aapko sirf serious baatein."
+  - name: "Lead Follow-up System"
+    price_label: "Managed plan me shamil"
+    description: "Har enquiry apne aap record, aur follow-up messages time par automatic — koi lead thandi nahi padegi."
+  - name: "Appointment & Fee Reminders"
+    price_label: "Managed plan me shamil"
+    description: "Clinics ke appointments, coaching ki fees, gym ki renewals — reminders apne aap, no-show aur late payment kam."
+  - name: "Mini CRM & Dashboard"
+    price_label: "₹4,999/month (Managed Care)"
+    description: "Saari leads aur bookings ek saaf Google Sheet / dashboard me — har chat record ke saath."
+
+faqs:
+  - question: "Free pilot kaise kaam karta hai?"
+    keywords: ["pilot", "free", "trial", "try"]
+    answer: "🎁 *7 din ka FREE pilot:* hum aapke business ke liye WhatsApp automation setup karke dete hain — 7 din bilkul free chalaiye. Pasand aaye tabhi aage badhenge, na aaye to bas band kar denge. Koi charge, koi commitment nahi."
+  - question: "Total kharcha kitna aayega?"
+    keywords: ["price", "cost", "kharcha", "rate", "kitna"]
+    answer: "💰 Saaf-saaf pricing:\n• One-time setup: ₹9,999\n• Uske baad Managed Care: ₹4,999/month (maintenance + support shamil)\n• Platform/message charges actual ke hisaab se alag — wo bhi pehle din clear bata dete hain, koi hidden cost nahi."
+  - question: "Setup me kitna time lagega?"
+    keywords: ["kitne din", "time lagega", "setup time", "kab tak", "duration"]
+    answer: "⏱️ Zyadatar businesses ka setup 3–5 din me live ho jata hai. Free pilot ke liye to hum 48 ghante me demo taiyaar kar dete hain."
+  - question: "Kya mujhe technical knowledge chahiye?"
+    keywords: ["technical", "coding", "seekhna", "mushkil", "knowledge"]
+    answer: "😊 Bilkul nahi! Aapko bas apna business chalana hai — setup, maintenance, sab hum sambhalte hain. Aur bina code chhuye settings badalne ke liye ek simple admin page bhi milta hai."
+  - question: "Ye kin businesses ke liye hai?"
+    keywords: ["kin ke liye", "kaun", "business type", "clinic", "coaching", "salon"]
+    answer: "🏪 Ye un sab businesses ke liye perfect hai jahan enquiries WhatsApp par aati hain — clinics, coaching institutes, salons, gyms, restaurants aur property dealers. Jahan reply ki speed hi admission/booking decide karti hai, wahi automation sabse zyada kaam aata hai."
+
+booking:
+  enabled: true
+  intro: "Bahut badhiya! 📞 Free demo call book kar dete hain — 15 minute me hum aapke business ke hisaab se pura plan samjhayenge."
+
+# ------------------------------------------------------------
+# Google Sheet chat log (optional):
+# google_sheet:
+#   webhook_url: "https://script.google.com/macros/s/XXXX/exec"
+# (ya .env me GOOGLE_SHEET_WEBHOOK_URL — env ko priority milti hai)
+# ------------------------------------------------------------
