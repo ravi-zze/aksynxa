@@ -1,0 +1,24 @@
+# AKSynxa V3.1 — Render free-tier deploy config
+services:
+  - type: web
+    name: aksynxa-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false        # Neon PostgreSQL connection string
+      - key: ADMIN_PASSWORD
+        sync: false        # Super-admin password — dashboard me set karna
+      - key: WHATSAPP_APP_SECRET
+        sync: false        # Production startup ke liye zaroori — abhi random, Meta connect pe asli
+      - key: VERIFY_TOKEN
+        sync: false        # Meta webhook verify token
+      - key: WHATSAPP_TOKEN
+        sync: false        # Meta Cloud API token — number connect hone par
+      - key: PHONE_NUMBER_ID
+        sync: false
+      - key: GOOGLE_SHEET_WEBHOOK_URL
+        sync: false        # Optional — Sheet logging

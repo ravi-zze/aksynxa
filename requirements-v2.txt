@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pyyaml
+requests
+python-multipart
+
+# Tests ke liye (python -m pytest) — server chalane ke liye zaroori nahi:
+pytest
+httpx
+
+# Optional — sirf tab chahiye jab Google Sheets ke liye Method B
+# (service account + gspread) use karna ho. Method A (Apps Script
+# webhook) ke liye ye nahi chahiye:
+# gspread
