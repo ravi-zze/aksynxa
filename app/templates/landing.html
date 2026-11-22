@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AKSynxa — WhatsApp Automation Base</title>
+<style>
+  * { box-sizing: border-box; margin: 0; font-family: "Segoe UI", Arial, sans-serif; }
+  body { background: #f4f6fb; color: #14213d; }
+  header { background: #0b1f4a; color: #fff; padding: 18px 28px; display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  header h1 { font-size: 20px; } header p { font-size: 12px; opacity: .75; }
+  main { max-width: 860px; margin: 40px auto; padding: 0 20px; }
+  .card { background: #fff; border: 1px solid #dde3f0; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+  .card h2 { font-size: 22px; margin-bottom: 8px; }
+  .card p { color: #475569; line-height: 1.55; }
+  .brand { display: inline-block; background: #eef2ff; color: #3730a3; padding: 4px 12px; border-radius: 999px; font-size: 13px; margin-top: 12px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .tile { flex: 1; min-width: 240px; background: #fff; border: 1px solid #dde3f0; border-radius: 14px; padding: 22px; text-decoration: none; color: inherit; }
+  .tile:hover { border-color: #2563eb; }
+  .tile h3 { font-size: 17px; margin-bottom: 6px; color: #0b1f4a; }
+  .tile p { font-size: 14px; color: #475569; line-height: 1.5; }
+  .go { color: #2563eb; font-weight: 600; font-size: 14px; margin-top: 10px; display: inline-block; }
+  footer { text-align: center; color: #94a3b8; font-size: 12px; padding: 24px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">AK</div>
+  <div>
+    <h1>AKSynxa</h1>
+    <p>WhatsApp Automation Base</p>
+  </div>
+</header>
+<main>
+  <div class="card">
+    <h2>Ek engine, har business ke liye WhatsApp bot</h2>
+    <p>Ye ek ready-made WhatsApp automation product hai. Bot ka saara behaviour —
+       naam, welcome message, menu, services, prices, FAQs — ek simple config file se
+       control hota hai. Naya client onboard karna matlab sirf config badalna, code nahi.</p>
+    <span class="brand">Loaded brands: <strong id="brandName">loading…</strong></span>
+  </div>
+  <div class="row">
+    <a class="tile" href="/dashboard">
+      <h3>📊 Owner Dashboard</h3>
+      <p>Har brand ki aaj ki chats, total leads, bookings aur human handoffs — aur aakhri 10 leads ki table. (Login chahiye)</p>
+      <span class="go">Dashboard kholein →</span>
+    </a>
+    <a class="tile" href="/admin">
+      <h3>⚙️ Admin / Setup</h3>
+      <p>Business ki settings bina code chhuye badlein — naam, services, prices, FAQs, Sheet link. Save karte hi bot update ho jata hai. (Login chahiye)</p>
+      <span class="go">Setup kholein →</span>
+    </a>
+    <a class="tile" href="/demo">
+      <h3>💬 Live Demo Chat</h3>
+      <p>Browser me hi bot ko test karein — bilkul WhatsApp jaisa chat. Upar se brand bhi badal sakte hain. Koi WhatsApp number ya Meta account nahi chahiye.</p>
+      <span class="go">Demo try karein →</span>
+    </a>
+  </div>
+</main>
+<footer>AKSynxa — AI Automation Agency, New Delhi · Har chat Google Sheet me record hoti hai</footer>
+<script>
+  fetch('/brands').then(r => r.json()).then(d => {
+    document.getElementById('brandName').textContent =
+      d.brands.map(b => b.name).join(' · ') + ' (default: ' +
+      (d.brands.find(b => b.slug === d.default) || {}).name + ')';
+  }).catch(() => { document.getElementById('brandName').textContent = '—'; });
+</script>
+</body>
+</html>

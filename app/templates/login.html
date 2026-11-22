@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Login — AKSynxa WhatsApp Base</title>
+<style>
+  * { box-sizing: border-box; margin: 0; font-family: "Segoe UI", Arial, sans-serif; }
+  body { background: #f4f6fb; color: #14213d; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card { background: #fff; border: 1px solid #dde3f0; border-radius: 16px; padding: 34px 30px; width: 380px; max-width: 94vw; box-shadow: 0 12px 34px rgba(11,31,74,.10); }
+  .logo { width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 17px; margin-bottom: 16px; }
+  h1 { font-size: 20px; color: #0b1f4a; margin-bottom: 6px; }
+  p.sub { font-size: 13.5px; color: #64748b; margin-bottom: 20px; line-height: 1.5; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  input[type=password] { width: 100%; border: 1px solid #cbd5e1; border-radius: 9px; padding: 11px 13px; font-size: 15px; background: #fbfcfe; margin-bottom: 16px; }
+  button { width: 100%; background: #2563eb; color: #fff; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  button:hover { background: #1d4ed8; }
+  .err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: 9px; padding: 10px 13px; font-size: 13.5px; margin-bottom: 16px; }
+  .note { font-size: 12px; color: #94a3b8; margin-top: 16px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">AK</div>
+  <h1>Admin Login</h1>
+  <p class="sub">AKSynxa WhatsApp Base ke admin panel aur dashboard ke liye login karein.</p>
+  <!--ERROR-->
+  <form method="post" action="/admin/login">
+    <label for="pw">Password</label>
+    <input type="password" id="pw" name="password" placeholder="Admin password" autofocus required>
+    <button type="submit">Login →</button>
+  </form>
+  <p class="note">Password server ki <strong>.env</strong> file me <strong>ADMIN_PASSWORD</strong> se set hota hai. Default (admin123) sirf local demo ke liye hai — production me strong password rakhein.</p>
+</div>
+</body>
+</html>

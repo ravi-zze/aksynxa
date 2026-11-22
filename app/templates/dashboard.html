@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Owner Dashboard — AKSynxa WhatsApp Base</title>
+<style>
+  * { box-sizing: border-box; margin: 0; font-family: "Segoe UI", Arial, sans-serif; }
+  body { background: #f4f6fb; color: #14213d; }
+  header { background: #0b1f4a; color: #fff; padding: 16px 28px; display: flex; align-items: center; gap: 12px; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  header h1 { font-size: 18px; } header p { font-size: 12px; opacity: .75; }
+  header nav { margin-left: auto; display: flex; gap: 16px; }
+  header a { color: #bfdbfe; font-size: 14px; text-decoration: none; }
+  main { max-width: 980px; margin: 28px auto 60px; padding: 0 18px; }
+  h2 { font-size: 17px; color: #0b1f4a; margin: 22px 0 12px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .bcard { background: #fff; border: 1px solid #dde3f0; border-radius: 14px; padding: 20px; }
+  .bcard h3 { font-size: 16px; margin-bottom: 14px; color: #0b1f4a; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat { background: #f8fafc; border: 1px solid #e8edf5; border-radius: 10px; padding: 12px; }
+  .stat .num { font-size: 24px; font-weight: 800; color: #0b1f4a; }
+  .stat .lbl { font-size: 12px; color: #64748b; margin-top: 2px; }
+  select { border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 11px; font-size: 14px; background: #fff; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #dde3f0; border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 13px; font-size: 13.5px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+  th { background: #0b1f4a; color: #fff; font-size: 12.5px; }
+  tr:last-child td { border-bottom: none; }
+  .stage { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #eef2ff; color: #3730a3; }
+  .stage.booking_confirmed { background: #dcfce7; color: #15803d; }
+  .stage.human_requested { background: #fef3c7; color: #92400e; }
+  .empty { color: #94a3b8; font-size: 14px; padding: 18px; background: #fff; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">AK</div>
+  <div>
+    <h1>AKSynxa — Owner Dashboard</h1>
+    <p>Saare brands ka haal ek nazar me</p>
+  </div>
+  <nav>
+    <a href="/admin">⚙️ Admin</a>
+    <a href="/demo">💬 Demo</a>
+    <a href="/admin/logout">Logout</a>
+  </nav>
+</header>
+<main>
+  <h2>📊 Brands — Aaj ka Summary</h2>
+  <div class="cards" id="cards"></div>
+
+  <h2>🧾 Aakhri 10 Leads — <span id="tblBrand"></span>
+    &nbsp;<select id="brandSel" onchange="load()"></select>
+  </h2>
+  <div id="leadsWrap"></div>
+  <p id="sched" style="font-size:13px;color:#64748b;margin-top:14px"></p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+
+async function load() {
+  const brand = $('brandSel').value;
+  const d = await (await fetch('/dashboard/data' + (brand ? '?brand=' + encodeURIComponent(brand) : ''))).json();
+  if (d.error) { location.href = '/admin'; return; }
+
+  if (!$('brandSel').options.length) {
+    d.cards.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.slug; o.textContent = c.name;
+      if (c.slug === d.brand) o.selected = true;
+      $('brandSel').appendChild(o);
+    });
+  }
+  $('cards').innerHTML = d.cards.map(c => `
+    <div class="bcard"><h3>${c.name}</h3>
+      <div class="stats">
+        <div class="stat"><div class="num">${c.chats_today}</div><div class="lbl">Aaj ki chats</div></div>
+        <div class="stat"><div class="num">${c.total_leads}</div><div class="lbl">Total leads</div></div>
+        <div class="stat"><div class="num">${c.bookings}</div><div class="lbl">Bookings</div></div>
+        <div class="stat"><div class="num">${c.human_handoffs}</div><div class="lbl">Human handoffs</div></div>
+      </div>
+    </div>`).join('');
+
+  $('tblBrand').textContent = d.brand_name;
+  if (!d.last_leads.length) {
+    $('leadsWrap').innerHTML = '<div class="empty">Abhi tak koi lead nahi aayi is brand par.</div>';
+  } else {
+    $('leadsWrap').innerHTML = `<table><tr><th>Time</th><th>Customer</th><th>Naam</th><th>Interest</th><th>Stage</th><th>Summary</th></tr>` +
+      d.last_leads.map(l => `<tr>
+        <td style="white-space:nowrap">${(l.timestamp||'').replace('T',' ').slice(0,16)}</td>
+        <td>${l.customer_number||''}</td><td>${l.name||'—'}</td><td>${l.interest||'—'}</td>
+        <td><span class="stage ${l.stage}">${l.stage}</span></td><td>${l.summary||''}</td></tr>`).join('') +
+      `</table>`;
+  }
+  $('sched').textContent = '⏰ Pending reminders / follow-ups: ' + d.pending_schedules;
+}
+load();
+</script>
+</body>
+</html>
