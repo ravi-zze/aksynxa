@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widget Demo — SmileCare Dental Clinic</title>
+<style>
+  body { font-family: "Segoe UI", Arial, sans-serif; background: #f4f6fb; color: #14213d; margin: 0; }
+  main { max-width: 640px; margin: 60px auto; padding: 0 20px; }
+  h1 { color: #0b1f4a; }
+  .card { background: #fff; border: 1px solid #dde3f0; border-radius: 14px; padding: 22px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🦷 SmileCare Dental Clinic</h1>
+  <div class="card">
+    <p>Ye ek dummy business website hai — AKSynxa chat widget test
+    karne ke liye.</p>
+    <p>Neeche right corner me <b>💬 bubble</b> dabao — bot se baat
+    hogi: services dekho, prices puchho, ya booking karke dekho
+    (menu me <b>3</b> dabao).</p>
+    <p style="color:#64748b;font-size:13px">Widget brand:
+    <code>demo-dental</code> · API: <code>POST /simulate</code></p>
+  </div>
+</main>
+<!-- Local demo: widget file isi folder se serve hoti hai,
+     data-api-base local AKSynxa server (port 8000) par hai.
+     Live site par data-api-base="https://aksynxa-api.onrender.com" rakho. -->
+<script src="aksynxa-widget.js"
+        data-brand="demo-dental"
+        data-api-base="http://127.0.0.1:8000"
+        data-title="SmileCare Dental — Chat"></script>
+</body>
+</html>
