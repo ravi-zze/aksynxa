@@ -20,6 +20,10 @@ Endpoints:
   GET  /webhook     Meta webhook verification
   POST /webhook     Meta messages -> signature check -> dedupe -> engine
   POST /simulate    Demo mode: {"from","text","brand"} -> bot replies
+  GET  /api/v1/*    Public REST API (per-brand API key) — app/api_v1.py
+  GET  /embed/{brand}  iframe stats page (token = brand API key)
+  GET  /setup       Setup wizard — draft config save (app/wizard.py)
+  POST /mcp         MCP server (Bearer MCP_API_KEY) — app/mcp_server.py
 
 V3.1: leads / conversations / reminders / business users DATABASE me
 (app/data_layer.py — SQLite local, PostgreSQL jab DATABASE_URL set).
@@ -42,14 +46,18 @@ from pydantic import BaseModel
 
 from app import auth as auth_mod
 from app import sender
+from app.api_v1 import build_api_router
 from app.config_loader import load_all_configs, load_config
 from app.data_layer import create_data_layer
 from app.engine import Engine
 from app.leads import LeadStore
+from app.pwa import register_pwa
 from app.scheduler import Scheduler
 from app.sheets import ChatLogger
 from app.store import Store, default_data_dir
 from app.postgres_store import PostgresStore
+from app.webhooks import WebhookDispatcher
+from app.wizard import build_wizard_router
 
 try:
     from zoneinfo import ZoneInfo
@@ -152,6 +160,10 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 STORE = PostgresStore(DATABASE_URL) if DATABASE_URL else Store()
 DATA = create_data_layer(DATABASE_URL, DATA_DIR)
 SCHEDULER = Scheduler(DATA_DIR, data_layer=DATA)
+# V3.2 outbound webhooks — har naya lead data layer ke hook se
+# dispatcher tak jata hai (lead.created / booking.created events).
+WEBHOOKS = WebhookDispatcher(DATA)
+DATA.lead_hook = WEBHOOKS.on_lead
 BRANDS: dict = {}
 DEFAULT_SLUG = ""
 
@@ -294,6 +306,17 @@ def _send_scheduled(item: dict) -> None:
     stage = "reminder" if item["type"] == "reminder" else "follow_up"
     sheets.log_turn(item["user_id"], name, "out", message, stage)
     log.info("[SCHEDULER] %s bheja -> %s (%s)", item["type"], item["user_id"], cfg.slug)
+    if item["type"] == "reminder":
+        # V3.2 outbound webhook — reminder gaya, subscribers ko khabar
+        try:
+            WEBHOOKS.fire(item["brand_slug"], "reminder.due", {
+                "reminder": {k: item.get(k) for k in
+                             ("id", "type", "user_id", "name", "service",
+                              "appointment", "datetime_text", "message")
+                             if item.get(k) is not None},
+            })
+        except Exception as exc:  # webhook kabhi scheduler ko na roke
+            log.warning("reminder.due webhook failed: %s", exc)
 
 
 def _has_booking(brand_slug: str, user_id: str, since_iso: str) -> bool:
@@ -315,6 +338,10 @@ async def _scheduler_loop() -> None:
                 since_retry = 0
                 for rt in BRANDS.values():
                     rt["sheets"].process_retry_queue()
+                try:
+                    WEBHOOKS.process_retries()
+                except Exception as exc:
+                    log.warning("webhook retry pass error: %s", exc)
         except Exception as exc:  # loop kabhi marna nahi chahiye
             log.warning("scheduler loop error: %s", exc)
         await asyncio.sleep(tick)
@@ -786,3 +813,47 @@ async def webhook_receive(request: Request):
                                 brand_slug=brand_slug,
                                 profile_name=contacts.get(user_id, ""))
     return JSONResponse({"status": "ok"})
+
+
+# ---------------------------------------------------------------------------
+# V3.2 integrations — Public REST API v1 (/api/v1/*, per-brand API
+# key), admin api-key/webhook endpoints, embed page (/embed/{brand}),
+# setup wizard (/setup, draft save), PWA (manifest + service worker)
+# aur website chat widget ke liye CORS. Detail: INTEGRATIONS.md
+# ---------------------------------------------------------------------------
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[os.environ.get("FRONTEND_ORIGIN", "").strip() or "*"],
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["*"],
+)
+app.include_router(build_api_router({
+    "data": lambda: DATA,
+    "brands": lambda: BRANDS,
+    "process_message": process_message,
+    "is_admin": is_admin,
+}))
+app.include_router(build_wizard_router(DATA_DIR))
+register_pwa(app)
+
+
+# ---------------------------------------------------------------------------
+# MCP server (V3.2) — /mcp par mount: koi bhi MCP client (ChatGPT
+# Developer Mode, Claude, ...) Bearer token ke saath connect karke
+# brand-scoped tools use kar sakta hai (list_businesses,
+# get_dashboard_stats, list_leads, list_bookings, list_reminders,
+# get_chat_history, simulate_message). Tools/data/auth ki poori
+# detail app/mcp_server.py me hai. MCP_API_KEY production me na ho
+# to /mcp mount hi nahi hota — baaki app bilkul pehle jaisa chalta
+# hai. Detail: MCP_NOTES.md
+# ---------------------------------------------------------------------------
+from app.mcp_server import mount_mcp  # noqa: E402
+
+mount_mcp(app, {
+    "data": lambda: DATA,
+    "brands": lambda: BRANDS,
+    "process_message": process_message,
+    "app_env": APP_ENV,
+})

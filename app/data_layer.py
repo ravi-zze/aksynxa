@@ -82,6 +82,39 @@ CREATE TABLE IF NOT EXISTS users (
     created_at    TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_users_brand ON users(brand_slug);
+CREATE TABLE IF NOT EXISTS api_keys (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    brand_slug  TEXT NOT NULL,
+    key_hash    TEXT NOT NULL UNIQUE,
+    label       TEXT NOT NULL DEFAULT '',
+    created_at  TEXT NOT NULL,
+    revoked     INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_brand ON api_keys(brand_slug);
+CREATE TABLE IF NOT EXISTS webhook_subscriptions (
+    id          TEXT PRIMARY KEY,
+    brand_slug  TEXT NOT NULL,
+    url         TEXT NOT NULL,
+    events      TEXT NOT NULL DEFAULT '[]',
+    secret      TEXT NOT NULL DEFAULT '',
+    active      INTEGER NOT NULL DEFAULT 1,
+    created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_hooks_brand ON webhook_subscriptions(brand_slug, active);
+CREATE TABLE IF NOT EXISTS webhook_deliveries (
+    id              TEXT PRIMARY KEY,
+    subscription_id TEXT NOT NULL,
+    brand_slug      TEXT NOT NULL,
+    event           TEXT NOT NULL DEFAULT '',
+    payload_json    TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'pending',
+    attempts        INTEGER NOT NULL DEFAULT 0,
+    next_retry_at   TEXT,
+    last_error      TEXT NOT NULL DEFAULT '',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_deliveries_due ON webhook_deliveries(status, next_retry_at);
 """
 
 PG_SCHEMA = """
@@ -134,6 +167,39 @@ CREATE TABLE IF NOT EXISTS users (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_users_brand ON users(brand_slug);
+CREATE TABLE IF NOT EXISTS api_keys (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    brand_slug  TEXT NOT NULL,
+    key_hash    TEXT NOT NULL UNIQUE,
+    label       TEXT NOT NULL DEFAULT '',
+    created_at  TEXT NOT NULL,
+    revoked     INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_brand ON api_keys(brand_slug);
+CREATE TABLE IF NOT EXISTS webhook_subscriptions (
+    id          TEXT PRIMARY KEY,
+    brand_slug  TEXT NOT NULL,
+    url         TEXT NOT NULL,
+    events      TEXT NOT NULL DEFAULT '[]',
+    secret      TEXT NOT NULL DEFAULT '',
+    active      INTEGER NOT NULL DEFAULT 1,
+    created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_hooks_brand ON webhook_subscriptions(brand_slug, active);
+CREATE TABLE IF NOT EXISTS webhook_deliveries (
+    id              TEXT PRIMARY KEY,
+    subscription_id TEXT NOT NULL,
+    brand_slug      TEXT NOT NULL,
+    event           TEXT NOT NULL DEFAULT '',
+    payload_json    TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'pending',
+    attempts        INTEGER NOT NULL DEFAULT 0,
+    next_retry_at   TEXT,
+    last_error      TEXT NOT NULL DEFAULT '',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_deliveries_due ON webhook_deliveries(status, next_retry_at);
 """
 
 LEAD_KEYS = ("timestamp", "brand", "customer_number", "name", "interest",
@@ -212,6 +278,12 @@ class DataLayer:
             "ORDER BY brand_slug")
 
     # -- leads ---------------------------------------------------------------
+    # Optional callback (main.py set karta hai): har naye lead par
+    # lead_hook(brand_slug, record) — outbound webhooks isi se fire
+    # hote hain. Default None = koi side effect nahi (tests/purana
+    # behaviour bilkul waisa hi).
+    lead_hook = None
+
     def add_lead(self, brand_slug: str, record: dict) -> None:
         self._execute(
             "INSERT INTO leads (brand_slug, timestamp, brand_name, "
@@ -222,6 +294,12 @@ class DataLayer:
              record.get("interest", ""), record.get("stage", ""),
              record.get("summary", "")),
         )
+        hook = self.lead_hook
+        if hook is not None:
+            try:
+                hook(brand_slug, record)
+            except Exception as exc:  # hook kabhi lead save ko na roke
+                log.warning("lead_hook failed (%s): %s", brand_slug, exc)
 
     def list_leads(self, brand_slug: str, stage: str | None = None,
                    customer_number: str | None = None) -> list:
@@ -308,6 +386,156 @@ class DataLayer:
             "UPDATE reminders SET status=?, payload_json=? WHERE id=?",
             (status, json.dumps(item, ensure_ascii=False), reminder_id),
         )
+
+    # -- API keys (V3.2 — public REST API / embed token) ---------------------
+    # Plaintext key KABHI store nahi hoti — sirf SHA-256 hash. Key
+    # brand-scoped hai: jo brand key ka hai, API usi ka data degi.
+    def create_api_key_record(self, brand_slug: str, key_hash: str,
+                              label: str = "") -> dict:
+        kid = self._execute(
+            "INSERT INTO api_keys (brand_slug, key_hash, label, created_at, "
+            "revoked) VALUES (?, ?, ?, ?, 0)",
+            (brand_slug, key_hash, label or "", _utc_now_iso()),
+        )
+        return self.get_api_key(kid)
+
+    def get_api_key(self, key_id):
+        if key_id is None:
+            return None
+        return self._query_one(
+            "SELECT id, brand_slug, key_hash, label, created_at, revoked "
+            "FROM api_keys WHERE id=?", (key_id,))
+
+    def get_api_key_by_hash(self, key_hash: str):
+        return self._query_one(
+            "SELECT id, brand_slug, key_hash, label, created_at, revoked "
+            "FROM api_keys WHERE key_hash=?", (key_hash,))
+
+    def list_api_keys(self, brand_slug: str) -> list:
+        return self._query(
+            "SELECT id, brand_slug, key_hash, label, created_at, revoked "
+            "FROM api_keys WHERE brand_slug=? ORDER BY id ASC", (brand_slug,))
+
+    def revoke_api_key(self, key_id) -> None:
+        self._execute("UPDATE api_keys SET revoked=1 WHERE id=?", (key_id,))
+
+    # -- Outbound webhook subscriptions + delivery queue (V3.2) ---------------
+    def create_webhook_subscription(self, sub: dict) -> dict:
+        self._execute(
+            "INSERT INTO webhook_subscriptions (id, brand_slug, url, events, "
+            "secret, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (sub["id"], sub["brand_slug"], sub["url"],
+             json.dumps(sub.get("events", []), ensure_ascii=False),
+             sub.get("secret", ""), 1 if sub.get("active", True) else 0,
+             sub.get("created_at", "") or _utc_now_iso()),
+        )
+        return self.get_webhook_subscription(sub["id"])
+
+    def get_webhook_subscription(self, sub_id: str):
+        row = self._query_one(
+            "SELECT id, brand_slug, url, events, secret, active, created_at "
+            "FROM webhook_subscriptions WHERE id=?", (sub_id,))
+        return self._sub_row(row)
+
+    def list_webhook_subscriptions(self, brand_slug: str | None = None,
+                                   active_only: bool = False) -> list:
+        sql = ("SELECT id, brand_slug, url, events, secret, active, "
+               "created_at FROM webhook_subscriptions WHERE 1=1")
+        params: list = []
+        if brand_slug is not None:
+            sql += " AND brand_slug=?"
+            params.append(brand_slug)
+        if active_only:
+            sql += " AND active=1"
+        sql += " ORDER BY created_at ASC, id ASC"
+        return [self._sub_row(r) for r in self._query(sql, tuple(params))]
+
+    @staticmethod
+    def _sub_row(row):
+        if row is None:
+            return None
+        row = dict(row)
+        try:
+            row["events"] = json.loads(row.get("events") or "[]")
+        except (json.JSONDecodeError, TypeError):
+            row["events"] = []
+        row["active"] = bool(row.get("active"))
+        return row
+
+    def add_webhook_delivery(self, item: dict) -> None:
+        now = _utc_now_iso()
+        self._execute(
+            "INSERT INTO webhook_deliveries (id, subscription_id, "
+            "brand_slug, event, payload_json, status, attempts, "
+            "next_retry_at, last_error, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (item["id"], item["subscription_id"], item["brand_slug"],
+             item.get("event", ""),
+             json.dumps(item.get("payload", {}), ensure_ascii=False),
+             item.get("status", "pending"), int(item.get("attempts", 0)),
+             item.get("next_retry_at"), item.get("last_error", ""),
+             item.get("created_at", "") or now, now),
+        )
+
+    def list_webhook_deliveries(self, brand_slug: str | None = None,
+                                status: str | None = None) -> list:
+        sql = ("SELECT id, subscription_id, brand_slug, event, "
+               "payload_json, status, attempts, next_retry_at, last_error, "
+               "created_at, updated_at FROM webhook_deliveries WHERE 1=1")
+        params: list = []
+        if brand_slug is not None:
+            sql += " AND brand_slug=?"
+            params.append(brand_slug)
+        if status is not None:
+            sql += " AND status=?"
+            params.append(status)
+        sql += " ORDER BY created_at ASC, id ASC"
+        return [self._delivery_row(r) for r in self._query(sql, tuple(params))]
+
+    def list_due_webhook_deliveries(self, now_iso: str, limit: int = 20) -> list:
+        rows = self._query(
+            "SELECT id, subscription_id, brand_slug, event, payload_json, "
+            "status, attempts, next_retry_at, last_error, created_at, "
+            "updated_at FROM webhook_deliveries WHERE status='pending' "
+            "AND (next_retry_at IS NULL OR next_retry_at<=?) "
+            "ORDER BY created_at ASC, id ASC LIMIT ?",
+            (now_iso, int(limit)))
+        return [self._delivery_row(r) for r in rows]
+
+    @staticmethod
+    def _delivery_row(row):
+        row = dict(row)
+        try:
+            row["payload"] = json.loads(row.pop("payload_json") or "{}")
+        except (json.JSONDecodeError, TypeError):
+            row["payload"] = {}
+        return row
+
+    def update_webhook_delivery(self, delivery_id: str, status: str | None = None,
+                                attempts: int | None = None,
+                                next_retry_at=..., last_error: str | None = None
+                                ) -> None:
+        sets, params = [], []
+        if status is not None:
+            sets.append("status=?")
+            params.append(status)
+        if attempts is not None:
+            sets.append("attempts=?")
+            params.append(int(attempts))
+        if next_retry_at is not ...:
+            sets.append("next_retry_at=?")
+            params.append(next_retry_at)
+        if last_error is not None:
+            sets.append("last_error=?")
+            params.append(last_error)
+        if not sets:
+            return
+        sets.append("updated_at=?")
+        params.append(_utc_now_iso())
+        params.append(delivery_id)
+        self._execute(
+            f"UPDATE webhook_deliveries SET {', '.join(sets)} WHERE id=?",
+            tuple(params))
 
     # -- business users ---------------------------------------------------------
     def create_user(self, brand_slug: str, email: str, password_hash: str,
@@ -415,6 +643,15 @@ class PostgresDataLayer(DataLayer):
             (brand_slug, email, password_hash, role),
         )
         return self.get_user(uid)
+
+    def create_api_key_record(self, brand_slug: str, key_hash: str,
+                              label: str = "") -> dict:
+        kid = self._execute_insert_id(
+            "INSERT INTO api_keys (brand_slug, key_hash, label, created_at, "
+            "revoked) VALUES (?, ?, ?, ?, 0)",
+            (brand_slug, key_hash, label or "", _utc_now_iso()),
+        )
+        return self.get_api_key(kid)
 
     def close(self) -> None:
         self.pool.close()
