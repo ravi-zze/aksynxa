@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setup Wizard — AKSynxa</title>
+<style>
+  * { box-sizing: border-box; margin: 0; font-family: "Segoe UI", Arial, sans-serif; }
+  body { background: #f4f6fb; color: #14213d; }
+  header { background: #0b1f4a; color: #fff; padding: 16px 22px; display: flex; align-items: center; gap: 12px; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #2563eb, #7c3aed); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  header h1 { font-size: 17px; } header p { font-size: 12px; opacity: .75; }
+  main { max-width: 560px; margin: 26px auto 60px; padding: 0 16px; }
+  .progress { display: flex; gap: 8px; margin-bottom: 20px; }
+  .progress div { flex: 1; height: 8px; border-radius: 99px; background: #dde3f0; }
+  .progress div.on { background: linear-gradient(90deg, #2563eb, #7c3aed); }
+  .steplabel { font-size: 13px; color: #64748b; margin-bottom: 6px; }
+  .card { background: #fff; border: 1px solid #dde3f0; border-radius: 16px; padding: 24px 20px; }
+  h2 { font-size: 21px; color: #0b1f4a; margin-bottom: 6px; }
+  .hint { font-size: 14px; color: #64748b; margin-bottom: 18px; }
+  label { display: block; font-size: 15px; font-weight: 600; margin: 16px 0 6px; }
+  label small { display: block; font-weight: 400; color: #64748b; font-size: 13px; margin-top: 2px; }
+  input, select { width: 100%; font-size: 18px; padding: 14px; border: 2px solid #dde3f0; border-radius: 12px; background: #fff; }
+  input:focus, select:focus { outline: none; border-color: #2563eb; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .svc { display: grid; grid-template-columns: 1fr 130px 42px; gap: 8px; margin-bottom: 10px; }
+  .svc input { font-size: 16px; padding: 12px; }
+  .del { border: none; background: #fee2e2; color: #b91c1c; border-radius: 10px; font-size: 17px; cursor: pointer; }
+  .addbtn { width: 100%; padding: 12px; font-size: 15px; border: 2px dashed #93c5fd; background: #eff6ff; color: #1d4ed8; border-radius: 12px; cursor: pointer; margin-top: 4px; }
+  .nav { display: flex; gap: 12px; margin-top: 22px; }
+  .btn { flex: 1; padding: 16px; font-size: 17px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; }
+  .btn.primary { background: linear-gradient(90deg, #2563eb, #7c3aed); color: #fff; }
+  .btn.ghost { background: #e8edf7; color: #0b1f4a; flex: 0 0 130px; }
+  .err { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 14px; margin-top: 14px; display: none; }
+  .done-emoji { font-size: 46px; text-align: center; margin-bottom: 8px; }
+  .next { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 16px; font-size: 14px; margin-top: 16px; line-height: 1.55; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-top: 14px; line-height: 1.5; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">A</div>
+  <div><h1>AKSynxa Setup</h1><p>Apna WhatsApp bot setup karo — bas 3 easy steps</p></div>
+</header>
+<main>
+  <div class="progress"><div id="p1" class="on"></div><div id="p2"></div><div id="p3"></div></div>
+
+  <!-- STEP 1 -->
+  <section id="step1">
+    <div class="steplabel">Step 1 of 3 — Business ki jaankari</div>
+    <div class="card">
+      <h2>Aapke business ka naam kya hai?</h2>
+      <p class="hint">Yahi naam customer ko bot ki welcome message me dikhega.</p>
+      <label>Business ka naam *
+        <input id="bizName" type="text" placeholder="e.g. SmileCare Dental Clinic" autocomplete="organization">
+      </label>
+      <label>Business type
+        <small>Bot ki language aur menu isi hisaab se set hoga.</small>
+        <select id="bizType">
+          <option value="clinic">Clinic / Doctor</option>
+          <option value="salon">Salon / Parlour</option>
+          <option value="coaching">Coaching / Classes</option>
+          <option value="cafe">Cafe / Restaurant</option>
+          <option value="gym">Gym / Fitness</option>
+          <option value="shop">Shop / Store</option>
+          <option value="other">Kuch aur</option>
+        </select>
+      </label>
+      <label>Aapka naam (owner)
+        <input id="ownerName" type="text" placeholder="e.g. Dr. Sharma" autocomplete="name">
+      </label>
+      <div class="err" id="err1"></div>
+      <div class="nav"><button class="btn primary" onclick="goStep(2)">Aage badho →</button></div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section id="step2" class="hidden">
+    <div class="steplabel">Step 2 of 3 — Services aur prices</div>
+    <div class="card">
+      <h2>Aap kya-kya services dete ho?</h2>
+      <p class="hint">Customer bot se yahi list dekhega aur booking karega. Jitni services hain, add kar do.</p>
+      <div id="svcList"></div>
+      <button class="addbtn" onclick="addService()">+ Ek aur service jodo</button>
+      <div class="err" id="err2"></div>
+      <div class="nav">
+        <button class="btn ghost" onclick="goStep(1)">← Pichla</button>
+        <button class="btn primary" onclick="goStep(3)">Aage badho →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section id="step3" class="hidden">
+    <div class="steplabel">Step 3 of 3 — WhatsApp aur timings</div>
+    <div class="card">
+      <h2>Bot kis number par chalega?</h2>
+      <p class="hint">Booking ki khabar (alert) bhi isi number par aayegi.</p>
+      <label>WhatsApp number *
+        <input id="waNumber" type="tel" inputmode="numeric" placeholder="e.g. 98110 12345" autocomplete="tel">
+      </label>
+      <div class="row2">
+        <label>Khulne ka time
+          <input id="openTime" type="time" value="10:00">
+        </label>
+        <label>Band hone ka time
+          <input id="closeTime" type="time" value="20:00">
+        </label>
+      </div>
+      <label>Hafte me chhutti (weekly off)
+        <select id="weeklyOff">
+          <option value="">Koi chhutti nahi</option>
+          <option>Sunday</option><option>Monday</option><option>Tuesday</option>
+          <option>Wednesday</option><option>Thursday</option><option>Friday</option>
+          <option>Saturday</option>
+        </select>
+      </label>
+      <div class="err" id="err3"></div>
+      <div class="nav">
+        <button class="btn ghost" onclick="goStep(2)">← Pichla</button>
+        <button class="btn primary" id="saveBtn" onclick="saveDraft()">Save karo ✓</button>
+      </div>
+      <div class="note">ℹ️ <b>Sach baat:</b> ye form abhi ek <b>draft</b> save karta hai. AKSynxa team is draft ko check karke aapka bot live karegi — jhootha "live ho gaya" hum nahi dikhate.</div>
+    </div>
+  </section>
+
+  <!-- DONE -->
+  <section id="stepDone" class="hidden">
+    <div class="card">
+      <div class="done-emoji">🎉</div>
+      <h2 style="text-align:center">Draft save ho gaya!</h2>
+      <p class="hint" style="text-align:center" id="doneMsg">Dhanyavaad! Aapki jaankari mil gayi hai.</p>
+      <div class="next">
+        <b>Ab aage kya hoga?</b><br>
+        1️⃣ AKSynxa team aapka draft check karegi<br>
+        2️⃣ Aapke naam se bot ki config banegi (services, prices, timings ke saath)<br>
+        3️⃣ WhatsApp number connect karke bot <b>live</b> hoga<br>
+        4️⃣ Aapko apne WhatsApp par confirmation milega ✅
+      </div>
+      <div class="nav"><button class="btn primary" onclick="location.reload()">Naya setup shuru karo</button></div>
+    </div>
+  </section>
+</main>
+<script>
+  let step = 1;
+  function show(id, on) { document.getElementById(id).classList.toggle('hidden', !on); }
+  function goStep(n) {
+    if (n > step && !validate(step)) return;
+    step = n;
+    [1, 2, 3].forEach(i => {
+      show('step' + i, i === n);
+      document.getElementById('p' + i).classList.toggle('on', i <= n);
+    });
+    show('stepDone', false);
+    window.scrollTo(0, 0);
+  }
+  function err(n, msg) {
+    const e = document.getElementById('err' + n);
+    e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none';
+    return !msg;
+  }
+  function validate(n) {
+    if (n === 1) {
+      const name = document.getElementById('bizName').value.trim();
+      return err(1, name.length >= 2 ? '' : 'Pehle business ka naam likho (kam se kam 2 akshar).');
+    }
+    if (n === 2) {
+      const names = [...document.querySelectorAll('.svc-name')].map(i => i.value.trim()).filter(Boolean);
+      return err(2, names.length ? '' : 'Kam se kam ek service to add karo.');
+    }
+    return true;
+  }
+  function addService(name = '', price = '') {
+    const div = document.createElement('div');
+    div.className = 'svc';
+    div.innerHTML = '<input class="svc-name" type="text" placeholder="Service ka naam, e.g. Haircut">' +
+      '<input class="svc-price" type="text" placeholder="Price, e.g. ₹299">' +
+      '<button class="del" title="Hatao" onclick="this.parentElement.remove()">×</button>';
+    div.querySelector('.svc-name').value = name;
+    div.querySelector('.svc-price').value = price;
+    document.getElementById('svcList').appendChild(div);
+  }
+  addService('General Service', '');
+  async function saveDraft() {
+    const num = document.getElementById('waNumber').value.replace(/\D/g, '');
+    if (num.length < 10) { err(3, 'WhatsApp number sahi se likho (10+ digits).'); return; }
+    err(3, '');
+    const services = [...document.querySelectorAll('.svc')].map(r => ({
+      name: r.querySelector('.svc-name').value.trim(),
+      price: r.querySelector('.svc-price').value.trim()
+    })).filter(s => s.name);
+    const body = {
+      business_name: document.getElementById('bizName').value.trim(),
+      business_type: document.getElementById('bizType').value,
+      owner_name: document.getElementById('ownerName').value.trim(),
+      services: services,
+      whatsapp_number: num,
+      open_time: document.getElementById('openTime').value,
+      close_time: document.getElementById('closeTime').value,
+      weekly_off: document.getElementById('weeklyOff').value
+    };
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = 'Save ho raha hai…';
+    try {
+      const r = await fetch('/setup/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'Save nahi hua');
+      [1, 2, 3].forEach(i => show('step' + i, false));
+      show('stepDone', true);
+      document.getElementById('doneMsg').textContent = 'Dhanyavaad! "' + body.business_name + '" ka draft save ho gaya hai.';
+    } catch (e) {
+      err(3, 'Save nahi hua: ' + e.message + ' — dobara try karo.');
+      btn.disabled = false; btn.textContent = 'Save karo ✓';
+    }
+  }
+</script>
+</body>
+</html>

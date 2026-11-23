@@ -18,6 +18,9 @@
   .err { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: 9px; padding: 10px 13px; font-size: 13.5px; margin-bottom: 16px; }
   .note { font-size: 12px; color: #94a3b8; margin-top: 16px; line-height: 1.5; }
 </style>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0b1f4a">
+<link rel="apple-touch-icon" href="/pwa/icon-192.png">
 </head>
 <body>
 <div class="card">
@@ -34,5 +37,6 @@
   </form>
   <p class="note">Account AKSynxa admin banata hai. Password bhool jayein to admin se reset karwayein.</p>
 </div>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}</script>
 </body>
 </html>
