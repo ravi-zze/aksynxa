@@ -22,3 +22,5 @@ services:
         sync: false
       - key: GOOGLE_SHEET_WEBHOOK_URL
         sync: false        # Optional — Sheet logging
+      - key: MCP_API_KEY
+        sync: false        # /mcp endpoint ka Bearer token — dashboard me set karna; na ho to production me /mcp disabled
