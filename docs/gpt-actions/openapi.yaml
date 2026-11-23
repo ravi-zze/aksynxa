@@ -1,0 +1,187 @@
+# AKSynxa — GPT Actions schema (trimmed)
+# Sirf /api/v1 endpoints. Custom GPT ke "Actions" me import karne ke
+# liye. Auth: API key (header X-API-Key) — GPT editor me wahi key
+# paste hogi jo scripts/create_api_key.py / admin se bani hai.
+openapi: 3.1.0
+info:
+  title: AKSynxa Public API
+  description: >-
+    AKSynxa WhatsApp automation platform ke business data ke liye API.
+    Key jis brand ki hai, sirf usi brand ka data milta hai — stats,
+    leads, bookings, reminders, aur bot ko test message (simulate).
+  version: 1.0.0
+servers:
+  - url: https://aksynxa-api.onrender.com
+security:
+  - ApiKeyAuth: []
+paths:
+  /api/v1/stats:
+    get:
+      operationId: getStats
+      summary: Brand ke dashboard totals (leads, bookings, chats, pending reminders)
+      responses:
+        "200":
+          description: Dashboard totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+        "401":
+          description: API key missing ya galat
+  /api/v1/leads:
+    get:
+      operationId: listLeads
+      summary: Brand ke recent leads (naye pehle)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Leads ki list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadList"
+        "401":
+          description: API key missing ya galat
+  /api/v1/bookings:
+    get:
+      operationId: listBookings
+      summary: Brand ki recent confirmed bookings
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Bookings ki list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingList"
+        "401":
+          description: API key missing ya galat
+  /api/v1/reminders:
+    get:
+      operationId: listReminders
+      summary: Brand ke reminders (status = pending, sent, cancelled ya all)
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            default: pending
+      responses:
+        "200":
+          description: Reminders ki list
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          description: API key missing ya galat
+  /api/v1/simulate:
+    post:
+      operationId: simulateMessage
+      summary: Bot ko test message bhejo (demo — asli WhatsApp message nahi jata)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                from:
+                  type: string
+                  description: Customer ka number (test id bhi chalega)
+                text:
+                  type: string
+                  description: Bot ko bhejna wala message
+      responses:
+        "200":
+          description: Bot ka reply, stage aur choices
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          description: API key missing ya galat
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Stats:
+      type: object
+      properties:
+        brand:
+          type: string
+        brand_name:
+          type: string
+        total_leads:
+          type: integer
+        bookings:
+          type: integer
+        human_handoffs:
+          type: integer
+        new_enquiries:
+          type: integer
+        total_chat_turns:
+          type: integer
+        messages_in:
+          type: integer
+        messages_out:
+          type: integer
+        pending_reminders:
+          type: integer
+    Lead:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        brand:
+          type: string
+        customer_number:
+          type: string
+        name:
+          type: string
+        interest:
+          type: string
+        stage:
+          type: string
+        summary:
+          type: string
+    LeadList:
+      type: object
+      properties:
+        brand:
+          type: string
+        count:
+          type: integer
+        leads:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lead"
+    BookingList:
+      type: object
+      properties:
+        brand:
+          type: string
+        count:
+          type: integer
+        bookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lead"
